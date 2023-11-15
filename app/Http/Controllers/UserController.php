@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Follow;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -38,8 +39,14 @@ class UserController extends Controller
     }
 
     public function profile(User $user) {
-        $posts = $user->posts()->get();
-        return view('profile-posts', compact(['user','posts']));
+        $currentlyFollowing = 0;
+
+        if(auth()->check()){
+            $currentlyFollowing = Follow::where([['user_id','=',auth()->user()->id],['followeduser','=',$user->id]])->count();
+        }
+
+        // $posts = $user->posts()->get();
+        return view('profile-posts', compact(['user','currentlyFollowing']));
     }
 
     public function showCorrectHomepage(){
