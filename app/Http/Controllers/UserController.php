@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 
 class UserController extends Controller
 {
@@ -38,20 +39,42 @@ class UserController extends Controller
         return view('avatar-form');
     }
 
-    public function profile(User $user) {
+    private function getSharedData($user){
         $currentlyFollowing = 0;
 
         if(auth()->check()){
             $currentlyFollowing = Follow::where([['user_id','=',auth()->user()->id],['followeduser','=',$user->id]])->count();
         }
 
-        // $posts = $user->posts()->get();
-        return view('profile-posts', compact(['user','currentlyFollowing']));
+        View::share('sharedData',compact(['currentlyFollowing','user']));
+    }
+
+    public function profile(User $user) {
+        $this->getSharedData($user);
+
+        return view('profile-posts', compact(['user']));
+    }
+
+    public function profileFollowers(User $user) {
+        $this->getSharedData($user);
+
+        $followers = $user->followers()->latest()->get();
+
+        return view('profile-followers', compact(['followers']));
+    }
+
+    public function profileFollowing(User $user) {
+        $this->getSharedData($user);
+
+        $followings = $user->following()->latest()->get();
+
+        return view('profile-following', compact(['followings']));
     }
 
     public function showCorrectHomepage(){
         if(auth()->check()) {
-            return view('homepage-feed');
+            $feedPosts = auth()->user()->feedPost()->latest()->paginate(3);
+            return view('homepage-feed', compact('feedPosts'));
         } else {
             return view('homepage');
         }
